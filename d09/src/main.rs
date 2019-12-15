@@ -7,11 +7,11 @@ enum Interrupt {
 }
 
 struct IntCodeCPU {
-    intcodes: Vec<i64>,
+    memory: Vec<i64>,
     ip: usize,
     halted: bool,
 
-    input: Option<i64>,
+    input: Vec<i64>,
     output: Vec<i64>,
 
     modes: Vec<i64>,
@@ -19,9 +19,9 @@ struct IntCodeCPU {
 }
 
 impl IntCodeCPU {
-    fn build(intcodes: Vec<i64>, input: Option<i64>) -> IntCodeCPU {
+    fn build(memory: Vec<i64>, input: Vec<i64>) -> IntCodeCPU {
         IntCodeCPU {
-            intcodes,
+            memory,
             ip: 0,
             halted: false,
             input,
@@ -32,7 +32,6 @@ impl IntCodeCPU {
     }
 
     fn run(&mut self) -> Result<i64, Interrupt> {
-        self.intcodes.resize(2000, 0);
         while !self.halted {
             let instr = self._get_instruction();
 
@@ -79,10 +78,10 @@ impl IntCodeCPU {
                 }
                 99 => {
                     self.halted = true;
-                    return Ok(self._ld(0, None));
+                    return Ok(self.peek(0));
                 }
                 _ => {
-                    println!("{:?}", self.intcodes);
+                    println!("{:?}", self.memory);
                     panic!(format!("Invalid op: {:?} (ip={:?})", op, self.ip));
                 }
             };
@@ -92,7 +91,7 @@ impl IntCodeCPU {
     }
 
     fn _get_instruction(&self) -> (i64, Vec<i64>) {
-        let mut instr = self.intcodes[self.ip];
+        let mut instr = self.memory[self.ip];
         let mut modes: Vec<i64> = Vec::new();
 
         let op = instr % 100;
@@ -108,50 +107,51 @@ impl IntCodeCPU {
     }
 
     fn _get_params(&self, n: usize) -> &[i64] {
-        return &self.intcodes[self.ip + 1..self.ip + 1 + n];
+        return &self.memory[self.ip + 1..self.ip + 1 + n];
     }
 
     fn add(&mut self) {
         let params = self._get_params(3);
 
-        let v1 = self._ld(params[0], self.modes.get(0));
-        let v2 = self._ld(params[1], self.modes.get(1));
-        let out = params[2];
+        let v1 = self.load(params[0], self.modes.get(0));
+        let v2 = self.load(params[1], self.modes.get(1));
 
-        let addr = self._addr(out, self.modes.get(2));
+        let tgt_addr = self._resolve_addr(params[2], self.modes.get(2));
 
-        self.intcodes[addr] = v1 + v2;
+        self.poke(tgt_addr, v1 + v2);
     }
 
     fn mul(&mut self) {
         let params = self._get_params(3);
 
-        let v1 = self._ld(params[0], self.modes.get(0));
-        let v2 = self._ld(params[1], self.modes.get(1));
-        let out = params[2];
+        let v1 = self.load(params[0], self.modes.get(0));
+        let v2 = self.load(params[1], self.modes.get(1));
 
-        let addr = self._addr(out, self.modes.get(2));
+        let tgt_addr = self._resolve_addr(params[2], self.modes.get(2));
 
-        self.intcodes[addr] = v1 * v2;
+        self.poke(tgt_addr, v1 * v2);
     }
 
     fn read(&mut self) -> Option<Interrupt> {
         let params = self._get_params(1);
 
-        match self.input {
-            Some(v) => {
-                let addr = self._addr(params[0], self.modes.get(0));
-                self.intcodes[addr] = v;
-                None
-            }
-            None => Some(Interrupt::WaitingOnInput),
+        if self.input.len() == 0 {
+            return Some(Interrupt::WaitingOnInput);
         }
+
+        let addr = self._resolve_addr(params[0], self.modes.get(0));
+        let v = self.input[0];
+        self.poke(addr, v);
+
+        self.input.remove(0);
+
+        return None;
     }
 
     fn write(&mut self) {
         let params = self._get_params(1);
 
-        let v = self._ld(params[0], self.modes.get(0));
+        let v = self.load(params[0], self.modes.get(0));
 
         self.output.push(v);
     }
@@ -159,8 +159,8 @@ impl IntCodeCPU {
     fn jump_if_true(&mut self) {
         let params = self._get_params(2);
 
-        let v1 = self._ld(params[0], self.modes.get(0));
-        let v2 = self._ld(params[1], self.modes.get(1));
+        let v1 = self.load(params[0], self.modes.get(0));
+        let v2 = self.load(params[1], self.modes.get(1));
 
         if v1 != 0 {
             self.ip = v2 as usize;
@@ -172,8 +172,8 @@ impl IntCodeCPU {
     fn jump_if_false(&mut self) {
         let params = self._get_params(2);
 
-        let v1 = self._ld(params[0], self.modes.get(0));
-        let v2 = self._ld(params[1], self.modes.get(1));
+        let v1 = self.load(params[0], self.modes.get(0));
+        let v2 = self.load(params[1], self.modes.get(1));
 
         if v1 == 0 {
             self.ip = v2 as usize;
@@ -185,51 +185,64 @@ impl IntCodeCPU {
     fn lt(&mut self) {
         let params = self._get_params(3);
 
-        let v1 = self._ld(params[0], self.modes.get(0));
-        let v2 = self._ld(params[1], self.modes.get(1));
+        let v1 = self.load(params[0], self.modes.get(0));
+        let v2 = self.load(params[1], self.modes.get(1));
 
-        let addr = self._addr(params[2], self.modes.get(2));
+        let addr = self._resolve_addr(params[2], self.modes.get(2));
 
         if v1 < v2 {
-            self.intcodes[addr] = 1;
+            self.poke(addr, 1);
         } else {
-            self.intcodes[addr] = 0;
+            self.poke(addr, 0);
         }
     }
 
     fn eq(&mut self) {
         let params = self._get_params(3);
 
-        let v1 = self._ld(params[0], self.modes.get(0));
-        let v2 = self._ld(params[1], self.modes.get(1));
+        let v1 = self.load(params[0], self.modes.get(0));
+        let v2 = self.load(params[1], self.modes.get(1));
 
-        let addr = self._addr(params[2], self.modes.get(2));
+        let addr = self._resolve_addr(params[2], self.modes.get(2));
 
         if v1 == v2 {
-            self.intcodes[addr] = 1;
+            self.poke(addr, 1);
         } else {
-            self.intcodes[addr] = 0;
+            self.poke(addr, 0);
         }
     }
 
     fn rel(&mut self) {
         let params = self._get_params(1);
 
-        let v = self._ld(params[0], self.modes.get(0));
+        let v = self.load(params[0], self.modes.get(0));
 
         self.rel_offset += v;
     }
 
-    fn _ld(&self, addr: i64, mode: Option<&i64>) -> i64 {
+    fn load(&self, addr: i64, mode: Option<&i64>) -> i64 {
         match mode.unwrap_or(&0) {
-            0 => self.intcodes[addr as usize],
+            0 | 2 => {
+                return self.peek(self._resolve_addr(addr, mode));
+            }
             1 => addr,
-            2 => self.intcodes[(addr + self.rel_offset) as usize],
             _ => panic!("Invalid mode: {:?}", mode),
         }
     }
 
-    fn _addr(&self, addr: i64, mode: Option<&i64>) -> usize {
+    fn peek(&self, addr: usize) -> i64 {
+        self.memory[addr]
+    }
+
+    fn poke(&mut self, addr: usize, value: i64) {
+        if addr >= self.memory.len() {
+            self.memory.resize(addr + 1, 0);
+        }
+
+        self.memory[addr] = value;
+    }
+
+    fn _resolve_addr(&self, addr: i64, mode: Option<&i64>) -> usize {
         let addr = match mode.unwrap_or(&0) {
             0 => addr,
             2 => addr + self.rel_offset,
@@ -237,6 +250,14 @@ impl IntCodeCPU {
         };
 
         addr as usize
+    }
+
+    fn pop_output(&mut self) -> Vec<i64> {
+        let output = self.output.clone();
+
+        self.output.clear();
+
+        return output;
     }
 }
 
@@ -260,10 +281,8 @@ fn get_input() -> Vec<i64> {
         .collect::<Vec<i64>>()
 }
 
-fn main() {
-    let input = get_input();
-
-    let mut cpu = IntCodeCPU::build(input.clone(), Some(1));
+fn run_program(program: &Vec<i64>, input: Vec<i64>) -> Vec<i64> {
+    let mut cpu = IntCodeCPU::build(program.clone(), input);
 
     let res = cpu.run();
     if res.is_err() {
@@ -273,22 +292,20 @@ fn main() {
         ));
     }
 
-    match cpu.output.pop() {
+    return cpu.pop_output();
+}
+
+fn main() {
+    let program = get_input();
+
+    let mut output = run_program(&program, vec![1]);
+    match output.pop() {
         Some(v) => println!("Part 1: {}", v),
         None => panic!("Program didn't produce output."),
     }
 
-    cpu = IntCodeCPU::build(input.clone(), Some(2));
-
-    let res = cpu.run();
-    if res.is_err() {
-        panic!(format!(
-            "Program stopped with interrupt {:?}",
-            res.err().unwrap()
-        ));
-    }
-
-    match cpu.output.pop() {
+    let mut output = run_program(&program, vec![2]);
+    match output.pop() {
         Some(v) => println!("Part 2: {}", v),
         None => panic!("Program didn't produce output."),
     }
