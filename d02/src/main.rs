@@ -1,37 +1,8 @@
+use intcode::IntCodeCPU;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-fn run_opcodes(opcodes: &mut Vec<i32>, n: i32, v: i32) -> Result<i32, String> {
-    let mut ip: usize = 0;
-    let mut op: i32;
-
-    op = opcodes[ip];
-
-    opcodes[1] = n;
-    opcodes[2] = v;
-
-    while ip < opcodes.len() {
-        let in1 = opcodes[ip + 1] as usize;
-        let in2 = opcodes[ip + 2] as usize;
-        let out = opcodes[ip + 3] as usize;
-
-        let val = match op {
-            1 => opcodes[in1] + opcodes[in2],
-            2 => opcodes[in1] * opcodes[in2],
-            99 => return Ok(opcodes[0]),
-            _ => return Err(format!("Invalid op: {:?}", op)),
-        };
-
-        opcodes[out] = val;
-
-        ip += 4;
-        op = opcodes[ip];
-    }
-
-    return Err("Reached end of opcodes".to_string());
-}
-
-fn get_input() -> Vec<i32> {
+fn get_input() -> Vec<i64> {
     let file = match File::open("../input/d02.txt") {
         Ok(file) => file,
         Err(error) => panic!("Unable to open file: {:?}", error),
@@ -44,27 +15,35 @@ fn get_input() -> Vec<i32> {
 
     line.trim_end()
         .split(',')
-        .map(|x| match x.parse::<i32>() {
+        .map(|x| match x.parse::<i64>() {
             Ok(v) => v,
             Err(err) => panic!("Unable to parse value: {:?}: {:?}", x, err),
         })
-        .collect::<Vec<i32>>()
+        .collect::<Vec<i64>>()
 }
 
 fn main() {
     let input = get_input();
     let input2 = 19690720;
 
-    let p1 = match run_opcodes(&mut input.clone(), 12, 2) {
+    let mut cpu = IntCodeCPU::build(input.clone(), Vec::new());
+    cpu.poke(1, 12);
+    cpu.poke(2, 2);
+    let p1 = match cpu.run() {
         Ok(val) => val,
         Err(err) => panic!(err),
     };
+
+    println!("Part 1: {}", p1);
 
     let mut p2 = 0;
 
     for n in 0..100 {
         for v in 0..100 {
-            let res = match run_opcodes(&mut input.clone(), n, v) {
+            let mut cpu = IntCodeCPU::build(input.clone(), Vec::new());
+            cpu.poke(1, n);
+            cpu.poke(2, v);
+            let res = match cpu.run() {
                 Ok(val) => val,
                 Err(err) => panic!(err),
             };
@@ -76,5 +55,5 @@ fn main() {
         }
     }
 
-    println!("Part 1: {}\nPart 2: {}", p1, p2);
+    println!("Part 2: {}", p2);
 }
