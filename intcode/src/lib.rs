@@ -45,10 +45,9 @@ impl IntCodeCPU {
                     self.ip += 4;
                 }
                 3 => {
-                    match self.read() {
-                        Some(int) => return Err(int),
-                        None => {}
-                    };
+                    if let Some(int) = self.read() {
+                        return Err(int);
+                    }
                     self.ip += 2;
                 }
                 4 => {
@@ -100,7 +99,7 @@ impl IntCodeCPU {
             instr /= 10;
         }
 
-        return (op, modes);
+        (op, modes)
     }
 
     fn add(&mut self) {
@@ -128,7 +127,7 @@ impl IntCodeCPU {
     fn read(&mut self) -> Option<Interrupt> {
         let params = self.get_params(1);
 
-        if self.input.len() == 0 {
+        if self.input.is_empty() {
             return Some(Interrupt::WaitingOnInput);
         }
 
@@ -138,7 +137,7 @@ impl IntCodeCPU {
 
         self.input.remove(0);
 
-        return None;
+        None
     }
 
     fn write(&mut self) {
@@ -214,14 +213,12 @@ impl IntCodeCPU {
     }
 
     fn get_params(&self, n: usize) -> &[i64] {
-        return &self.memory[self.ip + 1..self.ip + 1 + n];
+        &self.memory[self.ip + 1..self.ip + 1 + n]
     }
 
     fn load(&self, addr: i64, mode: Option<&i64>) -> i64 {
         match mode.unwrap_or(&0) {
-            0 | 2 => {
-                return self.peek(self.resolve_address(addr, mode));
-            }
+            0 | 2 => self.peek(self.resolve_address(addr, mode)),
             1 => addr,
             _ => panic!("Invalid mode: {:?}", mode),
         }
@@ -254,6 +251,6 @@ impl IntCodeCPU {
 
         self.output.clear();
 
-        return output;
+        output
     }
 }

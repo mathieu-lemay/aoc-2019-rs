@@ -22,8 +22,8 @@ fn get_input() -> Vec<i64> {
         .collect::<Vec<i64>>()
 }
 
-fn run_program(program: &Vec<i64>, input: Vec<i64>) -> Vec<i64> {
-    let mut cpu = IntCodeCPU::build(program.clone(), input);
+fn run_program(program: &[i64], input: Vec<i64>) -> Vec<i64> {
+    let mut cpu = IntCodeCPU::build(program.to_owned(), input);
 
     let res = cpu.run();
     if res.is_err() {
@@ -33,7 +33,7 @@ fn run_program(program: &Vec<i64>, input: Vec<i64>) -> Vec<i64> {
         ));
     }
 
-    return cpu.pop_output();
+    cpu.pop_output()
 }
 
 fn main() {
