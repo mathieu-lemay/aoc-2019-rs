@@ -4,7 +4,7 @@ use std::io::{BufRead, BufReader};
 use std::iter::FromIterator;
 
 fn get_input() -> Vec<Vec<String>> {
-    let file = match File::open("../input/d03.txt") {
+    let file = match File::open("input/d03.txt") {
         Ok(file) => file,
         Err(error) => panic!("Unable to open file: {:?}", error),
     };
@@ -43,7 +43,7 @@ fn trace_wire(instructions: Vec<String>) -> Result<Vec<Point>, String> {
     let mut x = 0;
     let mut y = 0;
 
-    positions.push(Point { x: x, y: y });
+    positions.push(Point { x, y });
 
     for instr in instructions {
         let mut chars = instr.chars();
@@ -61,48 +61,48 @@ fn trace_wire(instructions: Vec<String>) -> Result<Vec<Point>, String> {
             'U' => {
                 for i in 0..c {
                     positions.push(Point {
-                        x: x,
+                        x,
                         y: y + (i + 1),
                     });
                 }
 
-                y = y + c;
+                y += c;
             }
             'D' => {
                 for i in 0..c {
                     positions.push(Point {
-                        x: x,
+                        x,
                         y: y - (i + 1),
                     });
                 }
 
-                y = y - c;
+                y -= c;
             }
             'L' => {
                 for i in 0..c {
                     positions.push(Point {
                         x: x - (i + 1),
-                        y: y,
+                        y,
                     });
                 }
 
-                x = x - c;
+                x -= c;
             }
             'R' => {
                 for i in 0..c {
                     positions.push(Point {
                         x: x + (i + 1),
-                        y: y,
+                        y,
                     });
                 }
 
-                x = x + c;
+                x += c;
             }
             _ => return Err(format!("Invalid movement: {:?}", m)),
         };
     }
 
-    return Ok(positions);
+    Ok(positions)
 }
 
 fn main() {
@@ -113,7 +113,7 @@ fn main() {
     for i in input {
         match trace_wire(i) {
             Ok(w) => wires.push(w),
-            Err(err) => panic!(err),
+            Err(err) => panic!("{:?}", err),
         }
     }
 
@@ -139,9 +139,9 @@ fn main() {
             .iter()
             .map(|w| match w.iter().position(|x| x == &p) {
                 Some(p) => p,
-                None => panic!(format!("Not found: {:?}", p)),
+                None => panic!("Not found: {:?}", p),
             })
-            .fold(0, |acc, x| acc + x);
+            .sum();
 
         if steps != 0 {
             step_counts.push(steps);

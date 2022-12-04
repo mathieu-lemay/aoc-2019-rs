@@ -18,7 +18,7 @@ fn get_fuel_req_recur(weight: i32) -> i32 {
 fn get_input() -> Vec<i32> {
     let mut values: Vec<i32> = Vec::new();
 
-    let file = match File::open("../input/d01.txt") {
+    let file = match File::open("input/d01.txt") {
         Ok(file) => file,
         Err(error) => panic!("Unable to open file: {:?}", error),
     };

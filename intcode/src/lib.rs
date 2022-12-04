@@ -78,7 +78,7 @@ impl IntCodeCPU {
                 }
                 _ => {
                     println!("{:?}", self.memory);
-                    panic!(format!("Invalid op: {:?} (ip={:?})", op, self.ip));
+                    panic!("Invalid op: {:?} (ip={:?})", op, self.ip);
                 }
             };
         }
@@ -105,7 +105,7 @@ impl IntCodeCPU {
     fn add(&mut self) {
         let params = self.get_params(3);
 
-        let v1 = self.load(params[0], self.modes.get(0));
+        let v1 = self.load(params[0], self.modes.first());
         let v2 = self.load(params[1], self.modes.get(1));
 
         let tgt_addr = self.resolve_address(params[2], self.modes.get(2));
@@ -116,7 +116,7 @@ impl IntCodeCPU {
     fn mul(&mut self) {
         let params = self.get_params(3);
 
-        let v1 = self.load(params[0], self.modes.get(0));
+        let v1 = self.load(params[0], self.modes.first());
         let v2 = self.load(params[1], self.modes.get(1));
 
         let tgt_addr = self.resolve_address(params[2], self.modes.get(2));
@@ -131,7 +131,7 @@ impl IntCodeCPU {
             return Some(Interrupt::WaitingOnInput);
         }
 
-        let addr = self.resolve_address(params[0], self.modes.get(0));
+        let addr = self.resolve_address(params[0], self.modes.first());
         let v = self.input[0];
         self.poke(addr, v);
 
@@ -143,7 +143,7 @@ impl IntCodeCPU {
     fn write(&mut self) {
         let params = self.get_params(1);
 
-        let v = self.load(params[0], self.modes.get(0));
+        let v = self.load(params[0], self.modes.first());
 
         self.output.push(v);
     }
@@ -151,7 +151,7 @@ impl IntCodeCPU {
     fn jump_if_true(&mut self) {
         let params = self.get_params(2);
 
-        let v1 = self.load(params[0], self.modes.get(0));
+        let v1 = self.load(params[0], self.modes.first());
         let v2 = self.load(params[1], self.modes.get(1));
 
         if v1 != 0 {
@@ -164,7 +164,7 @@ impl IntCodeCPU {
     fn jump_if_false(&mut self) {
         let params = self.get_params(2);
 
-        let v1 = self.load(params[0], self.modes.get(0));
+        let v1 = self.load(params[0], self.modes.first());
         let v2 = self.load(params[1], self.modes.get(1));
 
         if v1 == 0 {
@@ -177,7 +177,7 @@ impl IntCodeCPU {
     fn lt(&mut self) {
         let params = self.get_params(3);
 
-        let v1 = self.load(params[0], self.modes.get(0));
+        let v1 = self.load(params[0], self.modes.first());
         let v2 = self.load(params[1], self.modes.get(1));
 
         let addr = self.resolve_address(params[2], self.modes.get(2));
@@ -192,7 +192,7 @@ impl IntCodeCPU {
     fn eq(&mut self) {
         let params = self.get_params(3);
 
-        let v1 = self.load(params[0], self.modes.get(0));
+        let v1 = self.load(params[0], self.modes.first());
         let v2 = self.load(params[1], self.modes.get(1));
 
         let addr = self.resolve_address(params[2], self.modes.get(2));
@@ -207,7 +207,7 @@ impl IntCodeCPU {
     fn rel(&mut self) {
         let params = self.get_params(1);
 
-        let v = self.load(params[0], self.modes.get(0));
+        let v = self.load(params[0], self.modes.first());
 
         self.rel_offset += v;
     }

@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 fn get_input() -> Vec<i64> {
-    let file = match File::open("../input/d02.txt") {
+    let file = match File::open("input/d02.txt") {
         Ok(file) => file,
         Err(error) => panic!("Unable to open file: {:?}", error),
     };
@@ -31,7 +31,7 @@ fn main() {
     cpu.poke(2, 2);
     let p1 = match cpu.run() {
         Ok(val) => val,
-        Err(err) => panic!(err),
+        Err(err) => panic!("{:?}", err),
     };
 
     println!("Part 1: {}", p1);
@@ -45,7 +45,7 @@ fn main() {
             cpu.poke(2, v);
             let res = match cpu.run() {
                 Ok(val) => val,
-                Err(err) => panic!(err),
+                Err(err) => panic!("{:?}", err),
             };
 
             if res == input2 {

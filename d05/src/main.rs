@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 fn get_input() -> Vec<i64> {
-    let file = match File::open("../input/d05.txt") {
+    let file = match File::open("input/d05.txt") {
         Ok(file) => file,
         Err(error) => panic!("Unable to open file: {:?}", error),
     };
@@ -31,7 +31,7 @@ fn main() {
     println!(">>> {:?}", output);
     println!("Part 1: {:?}", output.pop().unwrap());
 
-    let mut cpu = IntCodeCPU::build(program.clone(), vec![5]);
+    let mut cpu = IntCodeCPU::build(program, vec![5]);
     cpu.run().expect("Error running program");
     println!("Part 2: {:?}", cpu.pop_output().pop().unwrap());
 }

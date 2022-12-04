@@ -10,7 +10,7 @@ fn fft(signal: Vec<u8>, passes: usize) -> Vec<u8> {
     for _ in 0..passes {
         output = signal.clone();
 
-        for oid in 0..siglen {
+        for (oid, item) in output.iter_mut().enumerate().take(siglen) {
             let mut i = oid;
             let psize = oid + 1;
             let mut res = 0;
@@ -35,13 +35,13 @@ fn fft(signal: Vec<u8>, passes: usize) -> Vec<u8> {
                 i += psize * 2;
             }
 
-            output[oid] = (res.abs() % 10) as u8;
+            *item = (res.abs() % 10) as u8;
         }
 
         signal = output;
     }
 
-    return signal;
+    signal
 }
 
 fn fft2(signal: Vec<u8>, passes: usize) -> Vec<u8> {
@@ -64,11 +64,11 @@ fn fft2(signal: Vec<u8>, passes: usize) -> Vec<u8> {
         signal = output;
     }
 
-    return signal;
+    signal
 }
 
 fn get_input() -> Vec<u8> {
-    let file = match File::open("../input/d16.txt") {
+    let file = match File::open("input/d16.txt") {
         Ok(file) => file,
         Err(error) => panic!("Unable to open file: {:?}", error),
     };
@@ -95,7 +95,7 @@ fn vec2int(v: Vec<u8>) -> usize {
         res += v[i as usize] as usize * 10usize.pow(l - i - 1);
     }
 
-    return res;
+    res
 }
 
 fn main() {
@@ -107,14 +107,10 @@ fn main() {
     let siglen = signal.len();
     let mut bigsignal: Vec<u8> = Vec::with_capacity(siglen * 10000);
     for _ in 0..10000 {
-        let mut foo = signal.clone();
+        let mut s = signal.clone();
         for _ in 0..siglen {
-            bigsignal.append(&mut foo);
+            bigsignal.append(&mut s);
         }
-    }
-
-    for i in 10..0 {
-        println!("{}", i);
     }
 
     let offset = vec2int(signal[0..7].to_vec());

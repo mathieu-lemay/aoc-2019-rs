@@ -13,10 +13,10 @@ fn is_valid(digits: &Vec<char>) -> bool {
         }
     }
 
-    return false;
+    false
 }
 
-fn contains_one_pair(digits: &Vec<char>) -> bool {
+fn contains_one_pair(digits: &[char]) -> bool {
     for i in digits.iter() {
         let c = digits.iter().filter(|x| *x == i).count();
         if c == 2 {
@@ -24,7 +24,7 @@ fn contains_one_pair(digits: &Vec<char>) -> bool {
         }
     }
 
-    return false;
+    false
 }
 
 fn main() {

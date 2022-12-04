@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 fn get_input() -> Vec<i64> {
-    let file = match File::open("../input/d09.txt") {
+    let file = match File::open("input/d09.txt") {
         Ok(file) => file,
         Err(error) => panic!("Unable to open file: {:?}", error),
     };
@@ -27,10 +27,10 @@ fn run_program(program: &[i64], input: Vec<i64>) -> Vec<i64> {
 
     let res = cpu.run();
     if res.is_err() {
-        panic!(format!(
+        panic!(
             "Program stopped with interrupt {:?}",
             res.err().unwrap()
-        ));
+        );
     }
 
     cpu.pop_output()
